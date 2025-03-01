@@ -1,7 +1,8 @@
 import pandas as pd
-from sklearn.metrics import classification_report
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.multioutput import MultiOutputClassifier
 import pickle
-import numpy as np
 
 # Load the cleaned dataset
 print("Loading cleaned data...")
@@ -12,28 +13,30 @@ print("Splitting data into features and labels...")
 X = data['comment_text']
 y = data[['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']]
 
-# Load the model and vectorizer
-print("Loading model and vectorizer...")
-with open('model.pkl', 'rb') as f:
-    model = pickle.load(f)
-with open('vectorizer.pkl', 'rb') as f:
-    vectorizer = pickle.load(f)
-
 # Convert text to TF-IDF vectors
 print("Converting text to TF-IDF vectors...")
-X_tfidf = vectorizer.transform(X)
+vectorizer = TfidfVectorizer(max_features=5000)
+X_tfidf = vectorizer.fit_transform(X)
 
-# Get predicted probabilities
-print("Getting predicted probabilities...")
-y_pred_proba = model.predict_proba(X_tfidf)
+# Calculate class weights (to handle imbalanced data)
+print("Calculating class weights...")
+class_weights = []
+for col in y.columns:
+    positive_samples = y[col].sum()
+    total_samples = len(y)
+    weight = total_samples / (2 * positive_samples)  # Assign higher weight to minority classes
+    class_weights.append({0: 1, 1: weight})  # Weight for each class (0 and 1)
 
-# Adjust the classification threshold (e.g., 0.3)
-threshold = 0.3
-y_pred = (np.array(y_pred_proba) > threshold).astype(int)
+# Train a multi-output Logistic Regression model with class weights
+print("Training the model...")
+model = MultiOutputClassifier(LogisticRegression(class_weight='balanced'))  # Use class weights
+model.fit(X_tfidf, y)
 
-# Flatten the predictions to match the shape of y
-y_pred = np.hstack(y_pred)
+# Save the model and vectorizer
+print("Saving the model and vectorizer...")
+with open('model.pkl', 'wb') as f:
+    pickle.dump(model, f)
+with open('vectorizer.pkl', 'wb') as f:
+    pickle.dump(vectorizer, f)
 
-# Evaluate the model
-print("Evaluating the model...")
-print(classification_report(y, y_pred, target_names=y.columns))
+print("Model training complete. Model and vectorizer saved.")
