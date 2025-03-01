@@ -1,0 +1,37 @@
+
+---
+
+## **.gitignore**
+This file tells Git which files or folders to ignore. Here’s the template:
+
+```plaintext
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+.tox/
+
+# Dataset
+train.csv
+
+# Model and Vectorizer
+model.pkl
+vectorizer.pkl
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
